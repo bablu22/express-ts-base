@@ -52,7 +52,6 @@ jobs:
   publish:
     name: Publish to npm
     needs: build-and-test
-    if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     permissions:
       contents: read
