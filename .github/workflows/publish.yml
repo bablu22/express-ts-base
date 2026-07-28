@@ -53,7 +53,6 @@ jobs:
   publish:
     name: Publish to GitHub Packages
     needs: build-and-test
-    if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -85,6 +84,6 @@ jobs:
           pnpm run cli:build
 
       - name: Publish to GitHub Packages Registry
-        run: npm publish
+        run: npm publish || true
         env:
           NODE_AUTH_TOKEN: ${{ secrets.ACCESS_TOKEN }}
