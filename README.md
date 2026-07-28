@@ -8,13 +8,13 @@ Create a new project instantly:
 
 ```bash
 # Using pnpm (Recommended)
-pnpm create @bablu22/express-ts-base
+pnpm create express-ts-base
 
 # Using npm
-npm create @bablu22/express-ts-base
+npm create express-ts-base
 
 # Using yarn
-yarn create @bablu22/express-ts-base
+yarn create express-ts-base
 ```
 
 Then follow the interactive prompts and the next steps printed to your terminal.
