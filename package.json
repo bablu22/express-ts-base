@@ -3,6 +3,13 @@
   "version": "1.0.0",
   "description": "Interactive CLI generator for scaffolding express-ts-base backend applications",
   "main": "dist/index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bablu22/express-ts-base.git"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
   "bin": {
     "create-express-ts-base": "./dist/cli/index.js"
   },
