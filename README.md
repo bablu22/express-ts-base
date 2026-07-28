@@ -2,6 +2,23 @@
 
 A production-ready boilerplate for building REST APIs with **Express 5**, **TypeScript**, **Prisma 7**, **PostgreSQL**, **Redis**, **Socket.io**, and **BullMQ**.
 
+## Quick Start
+
+Create a new project instantly:
+
+```bash
+# Using pnpm (Recommended)
+pnpm create @bablu22/express-ts-base
+
+# Using npm
+npm create @bablu22/express-ts-base
+
+# Using yarn
+yarn create @bablu22/express-ts-base
+```
+
+Then follow the interactive prompts and the next steps printed to your terminal.
+
 ---
 
 ## Tech Stack

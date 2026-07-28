@@ -1,7 +1,12 @@
+#!/usr/bin/env node
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import * as p from '@clack/prompts';
 import pc from 'picocolors';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 async function main(): Promise<void> {
   p.intro(pc.bgMagenta(pc.white(pc.bold(' Create Express TS Base '))));
