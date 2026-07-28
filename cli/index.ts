@@ -1,0 +1,108 @@
+import fs from 'fs';
+import path from 'path';
+import * as p from '@clack/prompts';
+import pc from 'picocolors';
+
+async function main(): Promise<void> {
+  p.intro(pc.bgMagenta(pc.white(pc.bold(' Create Express TS Base '))));
+
+  const project = await p.group(
+    {
+      projectName: () =>
+        p.text({
+          message: 'What is your project name?',
+          placeholder: 'express-ts-base-app',
+          defaultValue: 'express-ts-base-app',
+          validate(val?: string) {
+            const value = val ?? '';
+            if (value.length === 0) {
+              return 'Project name is required';
+            }
+            if (!/^[a-z0-9-_]+$/i.test(value)) {
+              return 'Project name can only contain letters, numbers, hyphens and underscores';
+            }
+            return undefined;
+          },
+        }),
+      packageManager: () =>
+        p.select({
+          message: 'Select package manager:',
+          options: [
+            { value: 'pnpm', label: 'pnpm', hint: 'recommended' },
+            { value: 'npm', label: 'npm' },
+            { value: 'yarn', label: 'yarn' },
+          ],
+          initialValue: 'pnpm',
+        }),
+    },
+    {
+      onCancel: () => {
+        p.cancel('Operation cancelled.');
+        process.exit(0);
+      },
+    },
+  );
+
+  const targetDir = path.resolve(process.cwd(), project.projectName);
+  const templateDir = path.resolve(__dirname, '../template');
+
+  if (fs.existsSync(targetDir)) {
+    const files = fs.readdirSync(targetDir);
+    if (files.length > 0) {
+      const overwrite = await p.confirm({
+        message: `Target directory "${project.projectName}" is not empty. Overwrite?`,
+        initialValue: false,
+      });
+
+      if (p.isCancel(overwrite) || !overwrite) {
+        p.cancel('Operation cancelled.');
+        process.exit(0);
+      }
+    }
+  }
+
+  const s = p.spinner();
+  s.start(`Scaffolding project into ${pc.cyan(project.projectName)}...`);
+
+  fs.mkdirSync(targetDir, { recursive: true });
+
+  if (fs.existsSync(templateDir)) {
+    fs.cpSync(templateDir, targetDir, { recursive: true });
+  }
+
+  const pkgPath = path.join(targetDir, 'package.json');
+  if (fs.existsSync(pkgPath)) {
+    const rawContent = fs.readFileSync(pkgPath, 'utf-8');
+    const pkgContent = JSON.parse(rawContent) as Record<string, unknown>;
+    pkgContent['name'] = project.projectName;
+
+    if (project.packageManager !== 'pnpm') {
+      delete pkgContent['packageManager'];
+      delete pkgContent['pnpm'];
+    }
+
+    fs.writeFileSync(pkgPath, JSON.stringify(pkgContent, null, 2));
+  }
+
+  s.stop(`Project scaffolded successfully in ${pc.cyan(project.projectName)}!`);
+
+  const pm = project.packageManager;
+  const runCmd = pm === 'npm' ? 'npm run' : pm;
+
+  p.note(
+    `cd ${project.projectName}
+${pm} install
+cp .env.example .env
+${runCmd} docker:up
+${runCmd} prisma:migrate
+${runCmd} dev`,
+    'Next steps:',
+  );
+
+  p.outro(pc.green('Happy coding with express-ts-base! 🚀'));
+}
+
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "paths": {
+      "@/*": ["./dist/*"],
+      "@config/*": ["./dist/config/*"],
+      "@modules/*": ["./dist/modules/*"],
+      "@lib/*": ["./dist/lib/*"],
+      "@middleware/*": ["./dist/middleware/*"],
+      "@utils/*": ["./dist/utils/*"],
+      "@types/*": ["./dist/types/*"],
+      "@shared/*": ["./dist/shared/*"],
+      "@jobs/*": ["./dist/jobs/*"],
+      "@templates/*": ["./dist/templates/*"]
+    }
+  }
+}
