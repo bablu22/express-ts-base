@@ -3,13 +3,13 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import * as p from '@clack/prompts';
-import pc from 'picocolors';
+import chalk from 'chalk';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 async function main(): Promise<void> {
-  p.intro(pc.bgMagenta(pc.white(pc.bold(' Create Express TS Base '))));
+  p.intro(chalk.bgMagenta.white.bold(' Create Express TS Base '));
 
   const project = await p.group(
     {
@@ -67,7 +67,7 @@ async function main(): Promise<void> {
   }
 
   const s = p.spinner();
-  s.start(`Scaffolding project into ${pc.cyan(project.projectName)}...`);
+  s.start(`Scaffolding project into ${chalk.cyan(project.projectName)}...`);
 
   fs.mkdirSync(targetDir, { recursive: true });
 
@@ -89,7 +89,7 @@ async function main(): Promise<void> {
     fs.writeFileSync(pkgPath, JSON.stringify(pkgContent, null, 2));
   }
 
-  s.stop(`Project scaffolded successfully in ${pc.cyan(project.projectName)}!`);
+  s.stop(`Project scaffolded successfully in ${chalk.cyan(project.projectName)}!`);
 
   const pm = project.packageManager;
   const runCmd = pm === 'npm' ? 'npm run' : pm;
@@ -104,7 +104,24 @@ ${runCmd} dev`,
     'Next steps:',
   );
 
-  p.outro(pc.green('Happy coding with express-ts-base! 🚀'));
+  const openInVSCode = await p.confirm({
+    message: 'Do you want to open the project in VS Code?',
+    initialValue: true,
+  });
+
+  if (p.isCancel(openInVSCode)) {
+    p.cancel('Operation cancelled.');
+    process.exit(0);
+  }
+
+  if (openInVSCode) {
+    const { exec } = await import('child_process');
+    exec(`code ${targetDir}`, (error) => {
+      if (error) {
+        console.error(`Error opening VS Code: ${error.message}`);
+      }
+    });
+  }
 }
 
 main().catch((err) => {
