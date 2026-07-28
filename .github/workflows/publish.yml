@@ -49,7 +49,6 @@ jobs:
         run: |
           pnpm run build
           pnpm run cli:build
-
   publish:
     name: Publish to GitHub Packages
     needs: build-and-test
@@ -84,6 +83,7 @@ jobs:
           pnpm run cli:build
 
       - name: Publish to GitHub Packages Registry
-        run: npm publish || true
+        run: npm publish
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
