@@ -1,11 +1,11 @@
 {
   "name": "create-express-ts-base",
-  "version": "1.0.10",
+  "version": "1.0.21",
   "description": "Interactive CLI generator for scaffolding express-ts-base backend applications",
   "main": "dist/index.js",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/bablu22/express-ts-base.git"
+    "url": "https://github.com/bablu22/express-ts-base.git"
   },
   "files": [
     "README.md",
@@ -91,7 +91,6 @@
     "ioredis": "^5.6.1",
     "jsonwebtoken": "^9.0.3",
     "lint-staged": "^16.1.2",
-    "mjml": "^5.4.0",
     "nodemailer": "^9.0.3",
     "pg": "^8.16.3",
     "pino": "^9.6.0",

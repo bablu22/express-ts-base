@@ -1,7 +1,13 @@
 import type { Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import type { AuthService } from './auth.service';
-import type { LoginDto, RegisterDto, ResendOtpDto, VerifyOtpDto } from './auth.schema';
+import type {
+  ForgotPasswordDto,
+  LoginDto,
+  RegisterDto,
+  ResendOtpDto,
+  VerifyOtpDto,
+} from './auth.schema';
 
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
@@ -20,7 +26,19 @@ export class AuthController {
     const result = await this.authService.verifyOtp(dto);
     res.status(StatusCodes.OK).json({
       success: true,
-      data: { accessToken: result.accessToken },
+      data: {
+        accessToken: result.accessToken,
+        resetToken: result.resetToken,
+      },
+      message: result.message,
+    });
+  };
+
+  forgotPassword = async (req: Request, res: Response): Promise<void> => {
+    const dto = req.body as ForgotPasswordDto;
+    const result = await this.authService.forgotPassword(dto);
+    res.status(StatusCodes.OK).json({
+      success: true,
       message: result.message,
     });
   };

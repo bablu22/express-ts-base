@@ -51,7 +51,7 @@ Follow the interactive terminal prompts:
 | **Request Logging**      | Pino + `pino-http`         | Ultra-fast structured JSON logging with custom serializers                 |
 | **Validation**           | Zod                        | Strictly typed request body/params/query validation                        |
 | **Authentication**       | JWT + Bcrypt               | Secure password hashing & bearer token authentication                      |
-| **Transactional Email**  | Nodemailer + EJS/MJML      | Responsive HTML email templates with queue processing                      |
+| **Transactional Email**  | Nodemailer + EJS Engine    | Clean flat HTML email cards (`src/views/emails/`) with async queue         |
 | **Testing**              | Vitest 3+                  | Fast unit & integration testing with v8 coverage                           |
 | **CLI Engine**           | `@clack/prompts` + `chalk` | Interactive, beautiful CLI scaffolding experience                          |
 
@@ -80,12 +80,13 @@ Follow the interactive terminal prompts:
 │   │   ├── logger.ts           # Pino logger singleton
 │   │   ├── prisma.ts           # Singleton Prisma Client with pg.Pool adapter
 │   │   ├── redis.ts            # Singleton Redis connection manager & event tracking
+│   │   ├── template.service.ts # EJS email template rendering service
 │   │   └── validate.ts         # Zod validation middlewares (body, params, query)
 │   ├── middleware/
 │   │   ├── auth.middleware.ts  # JWT bearer authentication middleware
 │   │   └── error-handler.ts   # Express 5 global error handler & 404 handler
 │   ├── modules/                # Feature-based API modules
-│   │   ├── auth/               # Auth routes, controllers, services, schemas, OTP logic
+│   │   ├── auth/               # Multi-purpose OTP auth (email verification, password reset, 2FA)
 │   │   ├── user/               # User repository interface, Prisma repo, service
 │   │   ├── health/             # GET /api/v1/health readiness probe (DB + Redis)
 │   │   └── public/            # System liveness probes (/)
@@ -96,6 +97,11 @@ Follow the interactive terminal prompts:
 │   │   ├── socket.server.ts    # Socket.io initialization with Redis adapter
 │   │   ├── socket.registry.ts  # Event listener registration
 │   │   └── socket.types.ts     # Strongly typed client/server socket events
+│   ├── views/emails/           # Classic EJS HTML transactional email templates
+│   │   ├── layout.ejs          # Master responsive card container (flat light border)
+│   │   ├── verify-otp.ejs      # Multi-purpose OTP code template
+│   │   ├── verify-email.ejs    # Action button email verification
+│   │   └── welcome.ejs         # User welcome & onboarding checklist
 │   ├── app.ts                  # Express Application configuration & middleware pipeline
 │   ├── index.ts                # HTTP server bootstrap & graceful signal handling
 │   └── router.ts               # Versioned API Router (/api/v1)
@@ -150,7 +156,7 @@ pnpm test:coverage
 ### 4. Build for Production
 
 ```bash
-# Compile TypeScript to dist/
+# Compile TypeScript source code and copy EJS email views to dist/
 pnpm build
 
 # Start production server
@@ -161,22 +167,22 @@ pnpm start:prod
 
 ## 📋 Available NPM Scripts
 
-| Command                | Action                                                 |
-| :--------------------- | :----------------------------------------------------- |
-| `pnpm dev`             | Launch dev server with hot reload via `tsx watch`      |
-| `pnpm build`           | Compile TypeScript source code to `dist/`              |
-| `pnpm start`           | Execute production build from `dist/index.js`          |
-| `pnpm type-check`      | Perform strict TypeScript type verification            |
-| `pnpm lint`            | Lint codebase with ESLint                              |
-| `pnpm lint:fix`        | Automatically fix ESLint formatting & rule errors      |
-| `pnpm test`            | Run Vitest unit & integration tests                    |
-| `pnpm test:coverage`   | Generate Vitest code coverage report                   |
-| `pnpm prisma:migrate`  | Run Prisma database migrations in development          |
-| `pnpm prisma:generate` | Generate Prisma Client types                           |
-| `pnpm prisma:seed`     | Seed database with initial data                        |
-| `pnpm docker:up`       | Start PostgreSQL & Redis services via Docker Compose   |
-| `pnpm docker:down`     | Stop local Docker containers                           |
-| `pnpm cli:build`       | Bundle CLI generator using `tsup` for NPM distribution |
+| Command                | Action                                                   |
+| :--------------------- | :------------------------------------------------------- |
+| `pnpm dev`             | Launch dev server with hot reload via `tsx watch`        |
+| `pnpm build`           | Compile TypeScript source code and copy views to `dist/` |
+| `pnpm start`           | Execute production build from `dist/index.js`            |
+| `pnpm type-check`      | Perform strict TypeScript type verification              |
+| `pnpm lint`            | Lint codebase with ESLint                                |
+| `pnpm lint:fix`        | Automatically fix ESLint formatting & rule errors        |
+| `pnpm test`            | Run Vitest unit & integration tests                      |
+| `pnpm test:coverage`   | Generate Vitest code coverage report                     |
+| `pnpm prisma:migrate`  | Run Prisma database migrations in development            |
+| `pnpm prisma:generate` | Generate Prisma Client types                             |
+| `pnpm prisma:seed`     | Seed database with initial data                          |
+| `pnpm docker:up`       | Start PostgreSQL & Redis services via Docker Compose     |
+| `pnpm docker:down`     | Stop local Docker containers                             |
+| `pnpm cli:build`       | Bundle CLI generator using `tsup` for NPM distribution   |
 
 ---
 
@@ -191,9 +197,10 @@ pnpm start:prod
 ### Authentication Module (`/api/v1/auth`)
 
 - `POST /api/v1/auth/register` — Register a new user account (sends email OTP)
-- `POST /api/v1/auth/verify-otp` — Verify email address with 6-digit OTP
+- `POST /api/v1/auth/verify-otp` — Multi-purpose OTP verification (`email_verification`, `password_reset`, `login_2fa`)
+- `POST /api/v1/auth/forgot-password` — Request a password reset OTP code
+- `POST /api/v1/auth/resend-otp` — Request a fresh OTP code for specified purpose
 - `POST /api/v1/auth/login` — Authenticate user and issue JWT bearer token
-- `POST /api/v1/auth/resend-otp` — Request a fresh OTP code
 
 ### User Management (`/api/v1/users`)
 
@@ -207,7 +214,8 @@ pnpm start:prod
 2. **CORS & HPP**: Configurable cross-origin policies and HTTP Parameter Pollution protection.
 3. **Redis Rate Limiting**: Distributed rate limiting using `express-rate-limit` backed by Redis store, correctly placed behind `trust proxy`.
 4. **Input Sanitization & Schema Validation**: Strict input validation using Zod schemas for request body, URL parameters, and query strings.
-5. **Graceful Shutdown**: Intercepts `SIGINT`, `SIGTERM`, and unhandled rejections to cleanly terminate HTTP listeners, Socket.io, BullMQ workers, Redis connections, and PostgreSQL pools.
+5. **Purpose-Scoped OTP Storage**: Redis keys dynamically scoped (`otp:email_verification:<email>`, `otp:password_reset:<email>`) to prevent code hijacking across auth flows.
+6. **Graceful Shutdown**: Intercepts `SIGINT`, `SIGTERM`, and unhandled rejections to cleanly terminate HTTP listeners, Socket.io, BullMQ workers, Redis connections, and PostgreSQL pools.
 
 ---
 

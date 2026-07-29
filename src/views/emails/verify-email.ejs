@@ -1,0 +1,73 @@
+<table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
+  <!-- Mail Icon Header -->
+  <tr>
+    <td align="center" style="padding-bottom: 20px;">
+      <table role="presentation" border="0" cellspacing="0" cellpadding="0">
+        <tr>
+          <td align="center" style="background-color: #f4f4f5; border: 1px solid #e4e4e7; border-radius: 50%; width: 52px; height: 52px; line-height: 52px; font-size: 24px;">
+            ✉️
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+
+  <!-- Title -->
+  <tr>
+    <td align="center" style="font-size: 22px; font-weight: 700; color: #0f172a; padding-bottom: 8px; letter-spacing: -0.3px;">
+      Confirm Your Email Address
+    </td>
+  </tr>
+
+  <!-- Subtitle -->
+  <tr>
+    <td align="center" style="font-size: 15px; color: #64748b; line-height: 1.6; padding-bottom: 28px;">
+      Hi <strong style="color: #1e293b;"><%= name %></strong>, please click the button below to verify your email address and activate your account.
+    </td>
+  </tr>
+
+  <!-- Action Button (Flat Style, No Shadow) -->
+  <tr>
+    <td align="center" style="padding-bottom: 28px;">
+      <table role="presentation" border="0" cellspacing="0" cellpadding="0">
+        <tr>
+          <td align="center" style="background-color: #4f46e5; border: 1px solid #4338ca; border-radius: 8px;">
+            <a href="<%= verificationUrl %>" target="_blank" style="display: inline-block; color: #ffffff; font-size: 15px; font-weight: 600; text-decoration: none; padding: 14px 36px; letter-spacing: 0.2px;">
+              Verify Email Address
+            </a>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+
+  <!-- Fallback Link Box (Light Border) -->
+  <tr>
+    <td style="padding-bottom: 24px;">
+      <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #fafafa; border: 1px solid #eaecf0; border-radius: 8px; padding: 16px;">
+        <tr>
+          <td style="font-size: 12px; color: #64748b; font-weight: 600; padding-bottom: 6px;">
+            Or copy and paste this link into your browser:
+          </td>
+        </tr>
+        <tr>
+          <td style="font-size: 13px; word-break: break-all;">
+            <a href="<%= verificationUrl %>" style="color: #4f46e5; text-decoration: underline;"><%= verificationUrl %></a>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+
+  <!-- Divider -->
+  <tr>
+    <td style="border-top: 1px solid #eaecf0; padding-bottom: 20px;"></td>
+  </tr>
+
+  <!-- Expiry Notice -->
+  <tr>
+    <td align="center" style="font-size: 13px; color: #94a3b8; line-height: 1.5;">
+      This link will expire in <strong><%= expiresInHours %> hours</strong>. If you did not create an account, you can safely ignore this message.
+    </td>
+  </tr>
+</table>

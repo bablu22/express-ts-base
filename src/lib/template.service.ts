@@ -1,3 +1,4 @@
+import fs from 'fs';
 import path from 'path';
 import ejs from 'ejs';
 import { env } from '@config/env';
@@ -9,12 +10,28 @@ export interface RenderEmailOptions {
   previewText: string;
 }
 
+function getViewsDir(): string {
+  const relPath = path.resolve(__dirname, '../views/emails');
+  if (fs.existsSync(relPath)) {
+    return relPath;
+  }
+  const srcPath = path.resolve(process.cwd(), 'src/views/emails');
+  if (fs.existsSync(srcPath)) {
+    return srcPath;
+  }
+  const distPath = path.resolve(process.cwd(), 'dist/views/emails');
+  if (fs.existsSync(distPath)) {
+    return distPath;
+  }
+  return relPath;
+}
+
 /**
- * Renders an EJS template wrapped in the base layout.
- * Works seamlessly in development (src/views/emails) and production (dist/views/emails).
+ * Renders an EJS email template wrapped in the base layout.
+ * Pure classic server approach using EJS template engine.
  */
 export async function renderEmailTemplate(opts: RenderEmailOptions): Promise<string> {
-  const viewsDir = path.resolve(__dirname, '../../views/emails');
+  const viewsDir = getViewsDir();
   const templatePath = path.join(viewsDir, `${opts.templateName}.ejs`);
   const layoutPath = path.join(viewsDir, 'layout.ejs');
 

@@ -1,6 +1,18 @@
 import 'dotenv/config';
 import { z } from 'zod';
 
+// Helper for boolean env vars to prevent z.coerce.boolean() treating "false" string as true
+const booleanEnv = (defaultValue = false) =>
+  z
+    .preprocess(
+      (val) =>
+        typeof val === 'string'
+          ? val.toLowerCase() === 'true' || val === '1'
+          : Boolean(val),
+      z.boolean(),
+    )
+    .default(defaultValue);
+
 // Resolve unexpanded ${...} variable placeholders or missing URLs in process.env
 const resolveDatabaseUrl = (): string => {
   const dbUrl = process.env.DATABASE_URL ?? '';
@@ -69,13 +81,13 @@ const envSchema = z.object({
   // SMTP Email
   SMTP_HOST: z.string().default('smtp.mailtrap.io'),
   SMTP_PORT: z.coerce.number().default(2525),
-  SMTP_SECURE: z.coerce.boolean().default(false),
+  SMTP_SECURE: booleanEnv(false),
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
   SMTP_FROM: z.string().default('noreply@my-app.com'),
 
   // Database Seeding
-  SEED_RUN: z.coerce.boolean().default(false),
+  SEED_RUN: booleanEnv(false),
 });
 
 const _env = envSchema.safeParse(process.env);

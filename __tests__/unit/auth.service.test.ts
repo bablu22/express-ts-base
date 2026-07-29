@@ -52,7 +52,10 @@ describe('AuthService', () => {
       expect(result.message).toContain('Registration successful');
       expect(mockUserRepository.findByEmail).toHaveBeenCalledWith('john@example.com');
       expect(mockUserRepository.create).toHaveBeenCalled();
-      expect(mockOtpService.generateOtp).toHaveBeenCalledWith('john@example.com');
+      expect(mockOtpService.generateOtp).toHaveBeenCalledWith(
+        'john@example.com',
+        'email_verification',
+      );
       expect(mockEmailJob.enqueue).toHaveBeenCalled();
     });
 
@@ -123,7 +126,7 @@ describe('AuthService', () => {
   });
 
   describe('verifyOtp', () => {
-    it('should verify OTP and return access token', async () => {
+    it('should verify email_verification OTP and return access token', async () => {
       mockUserRepository.findByEmail.mockResolvedValue({
         id: 'user-1',
         email: 'john@example.com',
@@ -135,6 +138,7 @@ describe('AuthService', () => {
       const result = await authService.verifyOtp({
         email: 'john@example.com',
         otp: '123456',
+        purpose: 'email_verification',
       });
 
       expect(result.accessToken).toBeDefined();
@@ -142,6 +146,26 @@ describe('AuthService', () => {
         isVerified: true,
       });
       expect(mockEmailJob.enqueue).toHaveBeenCalled();
+    });
+
+    it('should verify password_reset OTP and reset password when newPassword is provided', async () => {
+      mockUserRepository.findByEmail.mockResolvedValue({
+        id: 'user-1',
+        email: 'john@example.com',
+        name: 'John Doe',
+        isVerified: true,
+      });
+      mockOtpService.verifyOtp.mockResolvedValue(true);
+
+      const result = await authService.verifyOtp({
+        email: 'john@example.com',
+        otp: '123456',
+        purpose: 'password_reset',
+        newPassword: 'newpassword123',
+      });
+
+      expect(result.message).toContain('Password reset successfully');
+      expect(mockUserRepository.update).toHaveBeenCalled();
     });
 
     it('should throw BadRequestError if OTP is invalid', async () => {
@@ -156,6 +180,7 @@ describe('AuthService', () => {
         authService.verifyOtp({
           email: 'john@example.com',
           otp: '000000',
+          purpose: 'email_verification',
         }),
       ).rejects.toThrow(BadRequestError);
     });

@@ -8,6 +8,7 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { OtpService } from './otp.service';
 import {
+  ForgotPasswordSchema,
   LoginSchema,
   RegisterSchema,
   ResendOtpSchema,
@@ -16,6 +17,7 @@ import {
 
 /**
  * AuthRouter — Composition Root for Authentication.
+ * Routes handle Registration, Login, Multi-Purpose OTP Verification, Resend, and Forgot Password.
  */
 export class AuthRouter extends BaseRouter {
   private readonly controller: AuthController;
@@ -44,15 +46,21 @@ export class AuthRouter extends BaseRouter {
     );
 
     router.post(
-      '/login',
-      validateBody(LoginSchema),
-      this.asyncHandler(this.controller.login),
-    );
-
-    router.post(
       '/resend-otp',
       validateBody(ResendOtpSchema),
       this.asyncHandler(this.controller.resendOtp),
+    );
+
+    router.post(
+      '/forgot-password',
+      validateBody(ForgotPasswordSchema),
+      this.asyncHandler(this.controller.forgotPassword),
+    );
+
+    router.post(
+      '/login',
+      validateBody(LoginSchema),
+      this.asyncHandler(this.controller.login),
     );
 
     return router;
