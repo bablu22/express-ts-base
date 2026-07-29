@@ -142,6 +142,11 @@ async function main(): Promise<void> {
       .replace(/APP_NAME=.*/g, `APP_NAME=${rawName}`)
       .replace(/POSTGRES_USER=.*/g, `POSTGRES_USER=${cleanName}`)
       .replace(/POSTGRES_DB=.*/g, `POSTGRES_DB=${cleanName}_db`)
+      .replace(
+        /DATABASE_URL=.*/g,
+        `DATABASE_URL="postgresql://${cleanName}:myapp_secret@localhost:5432/${cleanName}_db?schema=public"`,
+      )
+      .replace(/REDIS_URL=.*/g, `REDIS_URL="redis://:redis_secret@localhost:6379"`)
       .replace(/SMTP_FROM=.*/g, `SMTP_FROM="${rawName} <noreply@${rawName}.com>"`);
     fs.writeFileSync(envExamplePath, envContent, 'utf-8');
   }

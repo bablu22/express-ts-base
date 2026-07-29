@@ -1,6 +1,39 @@
 import 'dotenv/config';
 import { z } from 'zod';
 
+// Resolve unexpanded ${...} variable placeholders or missing URLs in process.env
+const resolveDatabaseUrl = (): string => {
+  const dbUrl = process.env.DATABASE_URL ?? '';
+  if (dbUrl && !dbUrl.includes('${')) {
+    return dbUrl;
+  }
+  const user = process.env.POSTGRES_USER || 'myapp';
+  const pass = process.env.POSTGRES_PASSWORD || 'myapp_secret';
+  const host = process.env.POSTGRES_HOST || 'localhost';
+  const port = process.env.POSTGRES_PORT || '5432';
+  const db = process.env.POSTGRES_DB || 'myapp_db';
+  return `postgresql://${user}:${pass}@${host}:${port}/${db}?schema=public`;
+};
+
+const resolveRedisUrl = (): string => {
+  const redisUrl = process.env.REDIS_URL ?? '';
+  if (redisUrl && !redisUrl.includes('${')) {
+    return redisUrl;
+  }
+  const host = process.env.REDIS_HOST || 'localhost';
+  const port = process.env.REDIS_PORT || '6379';
+  const pass = process.env.REDIS_PASSWORD || 'redis_secret';
+  return pass ? `redis://:${pass}@${host}:${port}` : `redis://${host}:${port}`;
+};
+
+if (!process.env.DATABASE_URL || process.env.DATABASE_URL.includes('${')) {
+  process.env.DATABASE_URL = resolveDatabaseUrl();
+}
+
+if (!process.env.REDIS_URL || process.env.REDIS_URL.includes('${')) {
+  process.env.REDIS_URL = resolveRedisUrl();
+}
+
 const envSchema = z.object({
   // Application
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
