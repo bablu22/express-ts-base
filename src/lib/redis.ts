@@ -14,7 +14,7 @@ export class RedisClient {
 
   static getInstance(): Redis {
     if (!this.client) {
-      this.client = this.createClient();
+      this.client = this.createClient(undefined, 'main');
     }
 
     return this.client;
@@ -22,7 +22,7 @@ export class RedisClient {
 
   static getPublisher(): Redis {
     if (!this.publisher) {
-      this.publisher = this.createClient();
+      this.publisher = this.createClient(undefined, 'publisher');
     }
 
     return this.publisher;
@@ -30,7 +30,7 @@ export class RedisClient {
 
   static getSubscriber(): Redis {
     if (!this.subscriber) {
-      this.subscriber = this.createClient();
+      this.subscriber = this.createClient(undefined, 'subscriber');
     }
 
     return this.subscriber;
@@ -41,9 +41,12 @@ export class RedisClient {
   }
 
   static createQueueConnection(): Redis {
-    return this.createClient({
-      maxRetriesPerRequest: null,
-    });
+    return this.createClient(
+      {
+        maxRetriesPerRequest: null,
+      },
+      'queue',
+    );
   }
 
   static async disconnect(): Promise<void> {
@@ -68,18 +71,18 @@ export class RedisClient {
     return this.getInstance().eval(script, numKeys, ...args) as Promise<T>;
   }
 
-  private static createClient(options?: RedisOptions): Redis {
+  private static createClient(options?: RedisOptions, name: string = 'client'): Redis {
     const client = new Redis(env.REDIS_URL, {
       maxRetriesPerRequest: 3,
 
       retryStrategy(times) {
         const delay = Math.min(times * 100, 3000);
-        logger.warn({ attempt: times, delay }, 'Redis: reconnecting');
+        logger.warn({ name, attempt: times, delay }, 'Redis: reconnecting');
         return delay;
       },
 
       reconnectOnError(err) {
-        logger.error({ err }, 'Redis reconnecting after error');
+        logger.error({ name, err }, 'Redis reconnecting after error');
         return true;
       },
 
@@ -87,34 +90,38 @@ export class RedisClient {
     });
 
     this.createdConnections.add(client);
-    this.bindEvents(client);
+    this.bindEvents(client, name);
 
     return client;
   }
 
-  private static bindEvents(client: Redis): void {
+  private static bindEvents(client: Redis, name: string): void {
     client.on('connect', () => {
-      logger.info('Redis: connected');
+      logger.debug({ name }, `Redis (${name}): connected`);
     });
 
     client.on('ready', () => {
-      logger.info('Redis: ready');
+      if (name === 'main') {
+        logger.info('Redis: connected and ready');
+      } else {
+        logger.debug({ name }, `Redis (${name}): ready`);
+      }
     });
 
     client.on('close', () => {
-      logger.warn('Redis: connection closed');
+      logger.warn({ name }, `Redis (${name}): connection closed`);
     });
 
     client.on('reconnecting', () => {
-      logger.info('Redis: reconnecting...');
+      logger.info({ name }, `Redis (${name}): reconnecting...`);
     });
 
     client.on('end', () => {
-      logger.warn('Redis: connection ended');
+      logger.warn({ name }, `Redis (${name}): connection ended`);
     });
 
     client.on('error', (err) => {
-      logger.error({ err }, 'Redis: error');
+      logger.error({ name, err }, `Redis (${name}): error`);
     });
   }
 }
