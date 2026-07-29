@@ -1,15 +1,15 @@
 import type { Queue, JobsOptions, Job } from 'bullmq';
-import { QueueManager } from './queue-manager';
+import { QueueFactory } from './queue-factory';
 
 export abstract class BaseJob<T = unknown> {
   abstract readonly name: string;
   abstract readonly queueName: string;
 
   /**
-   * Gets the Queue client for this job via QueueManager.
+   * Gets the Queue client for this job via QueueFactory.
    */
   getQueue(): Queue {
-    return QueueManager.getQueue(this.queueName);
+    return QueueFactory.getQueue(this.queueName);
   }
 
   /**

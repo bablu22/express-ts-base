@@ -216,6 +216,17 @@ async function main(): Promise<void> {
     try {
       await execAsync(`${project.packageManager} install`, { cwd: targetDir });
       installSpinner.stop('Dependencies installed successfully.');
+
+      const prismaSpinner = p.spinner();
+      prismaSpinner.start('Generating Prisma Client...');
+      try {
+        const runCmd =
+          project.packageManager === 'npm' ? 'npm run' : project.packageManager;
+        await execAsync(`${runCmd} prisma:generate`, { cwd: targetDir });
+        prismaSpinner.stop('Prisma Client generated successfully.');
+      } catch (err: unknown) {
+        prismaSpinner.stop(`Failed to generate Prisma Client: ${(err as Error).message}`);
+      }
     } catch (err: unknown) {
       installSpinner.stop(`Failed to install dependencies: ${(err as Error).message}`);
     }
@@ -227,6 +238,7 @@ async function main(): Promise<void> {
   const nextSteps = [
     `cd ${project.projectName}`,
     project.installDeps ? null : `${pm} install`,
+    project.installDeps ? null : `${runCmd} prisma:generate`,
     `${runCmd} docker:up`,
     `${runCmd} prisma:migrate`,
     `${runCmd} dev`,

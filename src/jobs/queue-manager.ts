@@ -1,7 +1,8 @@
-import { Queue, Worker, type Job } from 'bullmq';
+import { Worker, type Job } from 'bullmq';
 import { RedisClient } from '@lib/redis';
 import { logger } from '@lib/logger';
 import type { BaseJob } from './base.job';
+import { QueueFactory } from './queue-factory';
 import { SampleJob } from './sample.job';
 import { emailJob } from './email.job';
 
@@ -15,19 +16,7 @@ import { emailJob } from './email.job';
  */
 export class QueueManager {
   private static readonly jobs = new Map<string, BaseJob>();
-  private static readonly queues = new Map<string, Queue>();
   private static readonly workers: Worker[] = [];
-
-  static getQueue(queueName: string): Queue {
-    let queue = QueueManager.queues.get(queueName);
-    if (!queue) {
-      queue = new Queue(queueName, {
-        connection: RedisClient.createQueueConnection(),
-      });
-      QueueManager.queues.set(queueName, queue);
-    }
-    return queue;
-  }
 
   static register(job: BaseJob): void {
     QueueManager.jobs.set(`${job.queueName}:${job.name}`, job);
@@ -86,8 +75,7 @@ export class QueueManager {
     await Promise.all(QueueManager.workers.map((w) => w.close()));
     QueueManager.workers.length = 0;
 
-    await Promise.all(Array.from(QueueManager.queues.values()).map((q) => q.close()));
-    QueueManager.queues.clear();
+    await QueueFactory.closeAll();
     QueueManager.jobs.clear();
 
     logger.info('QueueManager: shutdown complete');
