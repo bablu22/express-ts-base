@@ -110,12 +110,21 @@ async function main(): Promise<void> {
 
   copyDirRecursive(templateDir, targetDir);
 
-  // Update generated package.json
+  const rawName = project.projectName;
+  const cleanName =
+    rawName
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '_')
+      .replace(/^_+|_+$/g, '') || 'app';
+
+  // 1. Update generated package.json
   const pkgPath = path.join(targetDir, 'package.json');
   if (fs.existsSync(pkgPath)) {
     const rawContent = fs.readFileSync(pkgPath, 'utf-8');
     const pkgContent = JSON.parse(rawContent) as Record<string, unknown>;
-    pkgContent['name'] = project.projectName;
+    pkgContent['name'] = rawName;
+    pkgContent['description'] =
+      `Backend API server for ${rawName}, scaffolded with create-express-ts-base.`;
 
     if (project.packageManager !== 'pnpm') {
       delete pkgContent['packageManager'];
@@ -125,11 +134,58 @@ async function main(): Promise<void> {
     fs.writeFileSync(pkgPath, JSON.stringify(pkgContent, null, 2));
   }
 
-  // Create .env from .env.example
+  // 2. Customize .env.example with user's project & database names
   const envExamplePath = path.join(targetDir, '.env.example');
+  if (fs.existsSync(envExamplePath)) {
+    let envContent = fs.readFileSync(envExamplePath, 'utf-8');
+    envContent = envContent
+      .replace(/APP_NAME=.*/g, `APP_NAME=${rawName}`)
+      .replace(/POSTGRES_USER=.*/g, `POSTGRES_USER=${cleanName}`)
+      .replace(/POSTGRES_DB=.*/g, `POSTGRES_DB=${cleanName}_db`)
+      .replace(/SMTP_FROM=.*/g, `SMTP_FROM="${rawName} <noreply@${rawName}.com>"`);
+    fs.writeFileSync(envExamplePath, envContent, 'utf-8');
+  }
+
+  // 3. Create .env from customized .env.example
   const envPath = path.join(targetDir, '.env');
-  if (fs.existsSync(envExamplePath) && !fs.existsSync(envPath)) {
+  if (fs.existsSync(envExamplePath)) {
     fs.copyFileSync(envExamplePath, envPath);
+  }
+
+  // 4. Customize docker-compose.yml containers, networks, and volume names
+  const dockerComposePath = path.join(targetDir, 'docker-compose.yml');
+  if (fs.existsSync(dockerComposePath)) {
+    let dockerContent = fs.readFileSync(dockerComposePath, 'utf-8');
+    dockerContent = dockerContent
+      .replace(/container_name: app_postgres/g, `container_name: ${cleanName}_postgres`)
+      .replace(/container_name: app_redis/g, `container_name: ${cleanName}_redis`)
+      .replace(
+        /POSTGRES_USER:\s*\${POSTGRES_USER:-myapp}/g,
+        `POSTGRES_USER: \${POSTGRES_USER:-${cleanName}}`,
+      )
+      .replace(
+        /POSTGRES_DB:\s*\${POSTGRES_DB:-myapp_db}/g,
+        `POSTGRES_DB: \${POSTGRES_DB:-${cleanName}_db}`,
+      )
+      .replace(
+        /pg_isready -U \${POSTGRES_USER:-myapp} -d \${POSTGRES_DB:-myapp_db}/g,
+        `pg_isready -U \${POSTGRES_USER:-${cleanName}} -d \${POSTGRES_DB:-${cleanName}_db}`,
+      )
+      .replace(/postgres_data/g, `${cleanName}_postgres_data`)
+      .replace(/redis_data/g, `${cleanName}_redis_data`)
+      .replace(/app_network/g, `${cleanName}_network`);
+    fs.writeFileSync(dockerComposePath, dockerContent, 'utf-8');
+  }
+
+  // 5. Customize project README.md header
+  const readmePath = path.join(targetDir, 'README.md');
+  if (fs.existsSync(readmePath)) {
+    let readmeContent = fs.readFileSync(readmePath, 'utf-8');
+    readmeContent = readmeContent.replace(
+      /# create-express-ts-base 🚀/g,
+      `# ${rawName} 🚀`,
+    );
+    fs.writeFileSync(readmePath, readmeContent, 'utf-8');
   }
 
   s.stop(`Project scaffolded successfully in ${chalk.cyan(project.projectName)}!`);
