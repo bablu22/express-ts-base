@@ -8,6 +8,7 @@ export class RedisClient {
   private static client: Redis | null = null;
   private static publisher: Redis | null = null;
   private static subscriber: Redis | null = null;
+  private static createdConnections = new Set<Redis>();
 
   private constructor() {}
 
@@ -46,12 +47,12 @@ export class RedisClient {
   }
 
   static async disconnect(): Promise<void> {
-    const connections = [this.client, this.publisher, this.subscriber].filter(
-      Boolean,
-    ) as Redis[];
+    const connections = Array.from(this.createdConnections);
+    await Promise.all(
+      connections.map((redis) => redis.quit().catch(() => redis.disconnect())),
+    );
 
-    await Promise.all(connections.map((redis) => redis.quit()));
-
+    this.createdConnections.clear();
     this.client = null;
     this.publisher = null;
     this.subscriber = null;
@@ -72,15 +73,8 @@ export class RedisClient {
       maxRetriesPerRequest: 3,
 
       retryStrategy(times) {
-        if (times > 5) {
-          logger.error('Redis: max retries reached');
-          return null;
-        }
-
         const delay = Math.min(times * 100, 3000);
-
         logger.warn({ attempt: times, delay }, 'Redis: reconnecting');
-
         return delay;
       },
 
@@ -92,6 +86,7 @@ export class RedisClient {
       ...(options ?? {}),
     });
 
+    this.createdConnections.add(client);
     this.bindEvents(client);
 
     return client;

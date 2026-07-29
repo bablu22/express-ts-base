@@ -16,6 +16,7 @@ export default tseslint.config(
       'prisma/generated/**',
       'cli/*.js',
       'cli/*.d.ts',
+      '**/*.d.ts',
     ],
   },
 
@@ -33,13 +34,7 @@ export default tseslint.config(
       },
       parserOptions: {
         projectService: {
-          allowDefaultProject: [
-            '*.ts',
-            '*.mts',
-            '*.mjs',
-            '__tests__/*.ts',
-            'prisma/*.ts',
-          ],
+          allowDefaultProject: ['*.ts', '*.mts', '*.mjs'],
         },
         tsconfigRootDir: import.meta.dirname,
       },

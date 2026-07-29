@@ -1,23 +1,47 @@
 #!/usr/bin/env node
 import fs from 'fs';
 import path from 'path';
+import { exec } from 'child_process';
+import { promisify } from 'util';
 import { fileURLToPath } from 'url';
 import * as p from '@clack/prompts';
 import chalk from 'chalk';
 
+const execAsync = promisify(exec);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+function copyDirRecursive(src: string, dest: string): void {
+  fs.mkdirSync(dest, { recursive: true });
+  const entries = fs.readdirSync(src, { withFileTypes: true });
+
+  for (const entry of entries) {
+    const srcPath = path.join(src, entry.name);
+    let destName = entry.name;
+    if (destName === '_gitignore') {
+      destName = '.gitignore';
+    }
+    const destPath = path.join(dest, destName);
+
+    if (entry.isDirectory()) {
+      copyDirRecursive(srcPath, destPath);
+    } else {
+      fs.copyFileSync(srcPath, destPath);
+    }
+  }
+}
+
 async function main(): Promise<void> {
-  p.intro(chalk.bgMagenta.white.bold(' Create Express TS Base '));
+  process.stdout.write('\n');
+  p.intro(chalk.bgCyan.black.bold(' 🚀 create-express-ts-base '));
 
   const project = await p.group(
     {
       projectName: () =>
         p.text({
           message: 'What is your project name?',
-          placeholder: 'express-ts-base-app',
-          defaultValue: 'express-ts-base-app',
+          placeholder: 'my-express-app',
+          defaultValue: 'my-express-app',
           validate(val?: string) {
             const value = val ?? '';
             if (value.length === 0) {
@@ -39,6 +63,21 @@ async function main(): Promise<void> {
           ],
           initialValue: 'pnpm',
         }),
+      initGit: () =>
+        p.confirm({
+          message: 'Initialize a new Git repository?',
+          initialValue: true,
+        }),
+      installDeps: () =>
+        p.confirm({
+          message: 'Install dependencies automatically?',
+          initialValue: false,
+        }),
+      openVSCode: () =>
+        p.confirm({
+          message: 'Open project in VS Code?',
+          initialValue: false,
+        }),
     },
     {
       onCancel: () => {
@@ -55,7 +94,7 @@ async function main(): Promise<void> {
     const files = fs.readdirSync(targetDir);
     if (files.length > 0) {
       const overwrite = await p.confirm({
-        message: `Target directory "${project.projectName}" is not empty. Overwrite?`,
+        message: `Target directory "${chalk.cyan(project.projectName)}" is not empty. Overwrite existing files?`,
         initialValue: false,
       });
 
@@ -69,12 +108,9 @@ async function main(): Promise<void> {
   const s = p.spinner();
   s.start(`Scaffolding project into ${chalk.cyan(project.projectName)}...`);
 
-  fs.mkdirSync(targetDir, { recursive: true });
+  copyDirRecursive(templateDir, targetDir);
 
-  if (fs.existsSync(templateDir)) {
-    fs.cpSync(templateDir, targetDir, { recursive: true });
-  }
-
+  // Update generated package.json
   const pkgPath = path.join(targetDir, 'package.json');
   if (fs.existsSync(pkgPath)) {
     const rawContent = fs.readFileSync(pkgPath, 'utf-8');
@@ -89,39 +125,57 @@ async function main(): Promise<void> {
     fs.writeFileSync(pkgPath, JSON.stringify(pkgContent, null, 2));
   }
 
+  // Create .env from .env.example
+  const envExamplePath = path.join(targetDir, '.env.example');
+  const envPath = path.join(targetDir, '.env');
+  if (fs.existsSync(envExamplePath) && !fs.existsSync(envPath)) {
+    fs.copyFileSync(envExamplePath, envPath);
+  }
+
   s.stop(`Project scaffolded successfully in ${chalk.cyan(project.projectName)}!`);
+
+  // Initialize Git if requested
+  if (project.initGit) {
+    const gitSpinner = p.spinner();
+    gitSpinner.start('Initializing Git repository...');
+    try {
+      await execAsync('git init', { cwd: targetDir });
+      gitSpinner.stop('Git repository initialized.');
+    } catch {
+      gitSpinner.stop('Failed to initialize Git repository.');
+    }
+  }
+
+  // Install dependencies if requested
+  if (project.installDeps) {
+    const installSpinner = p.spinner();
+    installSpinner.start(
+      `Installing dependencies using ${chalk.cyan(project.packageManager)}...`,
+    );
+    try {
+      await execAsync(`${project.packageManager} install`, { cwd: targetDir });
+      installSpinner.stop('Dependencies installed successfully.');
+    } catch (err: unknown) {
+      installSpinner.stop(`Failed to install dependencies: ${(err as Error).message}`);
+    }
+  }
 
   const pm = project.packageManager;
   const runCmd = pm === 'npm' ? 'npm run' : pm;
 
-  p.note(
-    `cd ${project.projectName}
-${pm} install
-cp .env.example .env
-${runCmd} docker:up
-${runCmd} prisma:migrate
-${runCmd} dev`,
-    'Next steps:',
-  );
+  const nextSteps = [
+    `cd ${project.projectName}`,
+    project.installDeps ? null : `${pm} install`,
+    `${runCmd} docker:up`,
+    `${runCmd} prisma:migrate`,
+    `${runCmd} dev`,
+  ]
+    .filter(Boolean)
+    .join('\n');
 
-  const openInVSCode = await p.confirm({
-    message: 'Do you want to open the project in VS Code?',
-    initialValue: true,
-  });
+  p.note(nextSteps, 'Next steps to start developing:');
 
-  if (p.isCancel(openInVSCode)) {
-    p.cancel('Operation cancelled.');
-    process.exit(0);
-  }
-
-  if (openInVSCode) {
-    const { exec } = await import('child_process');
-    exec(`code ${targetDir}`, (error) => {
-      if (error) {
-        console.error(`Error opening VS Code: ${error.message}`);
-      }
-    });
-  }
+  p.outro(chalk.green.bold('✨ All done! Happy coding!'));
 }
 
 main().catch((err) => {

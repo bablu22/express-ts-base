@@ -1,4 +1,4 @@
-import { Worker, type Job } from 'bullmq';
+import { Queue, Worker, type Job } from 'bullmq';
 import { RedisClient } from '@lib/redis';
 import { logger } from '@lib/logger';
 import type { BaseJob } from './base.job';
@@ -6,7 +6,7 @@ import { SampleJob } from './sample.job';
 import { emailJob } from './email.job';
 
 /**
- * QueueManager — registers jobs and boots BullMQ workers on startup.
+ * QueueManager — registers jobs, manages BullMQ Queue clients, and boots workers on startup.
  *
  * To add a new job:
  *   1. Create a class in src/jobs/ extending BaseJob<YourPayload>
@@ -15,7 +15,19 @@ import { emailJob } from './email.job';
  */
 export class QueueManager {
   private static readonly jobs = new Map<string, BaseJob>();
+  private static readonly queues = new Map<string, Queue>();
   private static readonly workers: Worker[] = [];
+
+  static getQueue(queueName: string): Queue {
+    let queue = QueueManager.queues.get(queueName);
+    if (!queue) {
+      queue = new Queue(queueName, {
+        connection: RedisClient.createQueueConnection(),
+      });
+      QueueManager.queues.set(queueName, queue);
+    }
+    return queue;
+  }
 
   static register(job: BaseJob): void {
     QueueManager.jobs.set(`${job.queueName}:${job.name}`, job);
@@ -69,14 +81,13 @@ export class QueueManager {
   }
 
   static async shutdown(): Promise<void> {
-    logger.info('QueueManager: shutting down workers...');
+    logger.info('QueueManager: shutting down workers and queues...');
 
     await Promise.all(QueueManager.workers.map((w) => w.close()));
     QueueManager.workers.length = 0;
 
-    for (const job of QueueManager.jobs.values()) {
-      await job.getQueue().close();
-    }
+    await Promise.all(Array.from(QueueManager.queues.values()).map((q) => q.close()));
+    QueueManager.queues.clear();
     QueueManager.jobs.clear();
 
     logger.info('QueueManager: shutdown complete');

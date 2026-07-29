@@ -92,13 +92,16 @@ class Server {
 
   private registerErrorHandlers(): void {
     process.on('unhandledRejection', (reason) => {
-      logger.error({ reason }, 'Unhandled Promise Rejection — rethrowing');
-      throw reason;
+      logger.error(
+        { reason },
+        'Unhandled Promise Rejection — initiating graceful shutdown',
+      );
+      void this.shutdown('UNHANDLED_REJECTION');
     });
 
     process.on('uncaughtException', (err) => {
-      logger.fatal({ err }, 'Uncaught Exception — exiting');
-      process.exit(1);
+      logger.fatal({ err }, 'Uncaught Exception — initiating graceful shutdown');
+      void this.shutdown('UNCAUGHT_EXCEPTION');
     });
   }
 }

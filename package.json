@@ -1,6 +1,6 @@
 {
   "name": "create-express-ts-base",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Interactive CLI generator for scaffolding express-ts-base backend applications",
   "main": "dist/index.js",
   "repository": {
@@ -17,7 +17,7 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc --project tsconfig.build.json && cp -r src/views dist/views",
-    "cli:build": "rm -rf dist/cli dist/template && tsup cli/index.ts --outDir dist/cli --format esm && mkdir -p dist/template && cp -r src prisma __tests__ docker .husky .vscode dist/template/ && cp tsconfig.json tsconfig.build.json tsconfig.prod.json eslint.config.mjs .prettierrc .prettierignore .gitignore .env.example .dockerignore vitest.config.ts prisma.config.ts docker-compose.yml Dockerfile docker-entrypoint.sh README.md dist/template/ && cp template/package.json dist/template/package.json",
+    "cli:build": "rm -rf dist/cli dist/template && tsup cli/index.ts --outDir dist/cli --format esm && mkdir -p dist/template && cp -r src prisma __tests__ docker .husky .vscode dist/template/ && cp tsconfig.json tsconfig.build.json tsconfig.prod.json eslint.config.mjs .prettierrc .prettierignore .gitignore .env.example .dockerignore vitest.config.ts prisma.config.ts docker-compose.yml Dockerfile docker-entrypoint.sh README.md dist/template/ && cp template/package.json dist/template/package.json && cp template/_gitignore dist/template/_gitignore",
     "start": "node -r tsconfig-paths/register dist/index.js",
     "start:prod": "NODE_ENV=production node -r tsconfig-paths/register dist/index.js",
     "lint": "eslint .",

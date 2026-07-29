@@ -27,6 +27,9 @@ export class App {
   }
 
   private registerMiddleware(): void {
+    this.express.set('trust proxy', 1);
+    this.express.disable('x-powered-by');
+
     this.express.use(helmet());
 
     this.express.use(
@@ -52,7 +55,7 @@ export class App {
       },
       store: new RedisStore({
         sendCommand: (...args: string[]) =>
-          RedisClient.getInstance().call(args[0], ...args.slice(1)) as Promise<number>,
+          RedisClient.getInstance().call(args[0], ...args.slice(1)) as Promise<any>,
       }),
     });
     this.express.use(rateLimiter);
@@ -84,9 +87,6 @@ export class App {
         },
       }),
     );
-
-    this.express.set('trust proxy', 1);
-    this.express.disable('x-powered-by');
 
     this.express.use(express.json({ limit: '10mb' }));
     this.express.use(express.urlencoded({ extended: true, limit: '10mb' }));

@@ -1,21 +1,15 @@
-import { Queue, type JobsOptions, type Job } from 'bullmq';
-import { RedisClient } from '@lib/redis';
+import type { Queue, JobsOptions, Job } from 'bullmq';
+import { QueueManager } from './queue-manager';
 
 export abstract class BaseJob<T = unknown> {
   abstract readonly name: string;
   abstract readonly queueName: string;
-  private queue: Queue | null = null;
 
   /**
-   * Gets or instantiates the Queue client for this job.
+   * Gets the Queue client for this job via QueueManager.
    */
   getQueue(): Queue {
-    if (!this.queue) {
-      this.queue = new Queue(this.queueName, {
-        connection: RedisClient.createQueueConnection(),
-      });
-    }
-    return this.queue;
+    return QueueManager.getQueue(this.queueName);
   }
 
   /**

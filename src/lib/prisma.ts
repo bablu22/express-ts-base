@@ -1,10 +1,12 @@
-import { PrismaClient } from '@prisma/client';
+import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
+import { PrismaClient } from '@prisma/client';
 import { env } from '@config/env';
 import { logger } from '@lib/logger';
 
 export class Database {
   private static instance: PrismaClient | null = null;
+  private static pool: Pool | null = null;
 
   private constructor() {}
 
@@ -24,14 +26,25 @@ export class Database {
     if (Database.instance) {
       await Database.instance.$disconnect();
       Database.instance = null;
-      logger.info('Database: disconnected');
     }
+    if (Database.pool) {
+      await Database.pool.end();
+      Database.pool = null;
+    }
+    logger.info('Database: disconnected');
   }
 
   private static createClient(): PrismaClient {
     const isDev = env.NODE_ENV === 'development';
 
-    const adapter = new PrismaPg({ connectionString: env.DATABASE_URL });
+    Database.pool = new Pool({
+      connectionString: env.DATABASE_URL,
+      max: 10,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 5000,
+    });
+
+    const adapter = new PrismaPg(Database.pool);
 
     const client = new PrismaClient({
       adapter,
