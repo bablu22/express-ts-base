@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="https://i.ibb.co.com/ch2r6MMY/thumb.png" alt="create-express-ts-base banner" width="100%" />
+  <img src="https://i.ibb.co.com/Tqq4vR78/4321db6e-b86d-4b67-bf20-cf4f4a546e8d.png" alt="create-express-ts-base banner" width="100%" />
 </div>
 
 # create-express-ts-base 🚀
