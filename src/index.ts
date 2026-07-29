@@ -24,10 +24,7 @@ class Server {
       process.exit(1);
     }
 
-    const redis = RedisClient.getInstance();
-    if (redis.status !== 'ready') {
-      logger.warn({ redisStatus: redis.status }, 'Redis: not yet ready at startup');
-    }
+    RedisClient.getInstance();
 
     this.httpServer = http.createServer(this.app.getInstance());
     this.io = createIo(this.httpServer);
